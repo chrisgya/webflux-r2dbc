@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: e-store
+
+  r2dbc:
+    name: r_ecomm
+    url: 'r2dbc:postgresql://localhost:5432/r_ecomm'
+    username: postgres
+    password: Password@1
+
+  # Flyway configuration
+  flyway:
+    url: 'jdbc:postgresql://localhost:5432/r_ecomm'
+    schemas: r_ecomm
+    user: ${spring.r2dbc.username}
+    password: ${spring.r2dbc.password}

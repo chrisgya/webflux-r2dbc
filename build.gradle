@@ -1,0 +1,80 @@
+plugins {
+	id 'org.springframework.boot' version '2.5.6'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+	id "org.hidetake.swagger.generator" version "2.18.2"
+}
+
+group = 'com.chrisgya'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
+
+
+
+swaggerSources {
+	def typeMappings = 'URI=URI, BigDecimal=BigDecimal, EntityModel=EntityModel'
+	def importMappings = 'URI=java.net.URI, BigDecimal=java.math.BigDecimal, EntityModel=org.springframework.hateoas.EntityModel'
+	eStore {
+		def apiYaml = "${rootDir}/src/main/resources/api/openapi.yaml"
+		def configJson = "${rootDir}/src/main/resources/api/config.json"
+		inputFile = file(apiYaml)
+		def ignoreFile = file("${rootDir}/src/main/resources/api/.openapi-generator-ignore")
+		code {
+			language = 'spring'
+			configFile = file(configJson)
+			rawOptions = ['--ignore-file-override', ignoreFile, '--type-mappings',
+						  typeMappings, '--import-mappings', importMappings] as List<String>
+			components = [models: true, apis: true, supportingFiles: 'ApiUtil.java']
+			//dependsOn validation // Should be uncommented once plugin starts supporting OA 3 validation
+		}
+	}
+}
+
+compileJava.dependsOn swaggerSources.eStore.code
+sourceSets.main.java.srcDir "${swaggerSources.eStore.code.outputDir}/src/main/java"
+sourceSets.main.resources.srcDir "${swaggerSources.eStore.code.outputDir}/src/main/resources"
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// OpenAPI Starts
+	swaggerCodegen 'org.openapitools:openapi-generator-cli:4.3.1'
+	compileOnly 'io.swagger:swagger-annotations:1.6.2'
+	compileOnly 'org.openapitools:jackson-databind-nullable:0.2.1'
+//	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+	// OpenAPI Ends
+
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+	implementation 'org.springframework.hateoas:spring-hateoas'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.springframework:spring-jdbc'
+	runtimeOnly 'io.r2dbc:r2dbc-postgresql'
+	runtimeOnly 'org.postgresql:postgresql'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+}
+
+//configurations.all {
+//	resolutionStrategy.dependencySubstitution.all { dependency ->
+//		if (dependency.requested instanceof ModuleComponentSelector && dependency.requested.module == 'spring-boot-starter-reactor-netty') {
+//			dependency.useTarget("org.springframework.boot:spring-boot-starter-tomcat:$dependency.requested.version", 'Use Undertow instead of Reactor Netty')
+//		}
+//	}
+//}
+
+
+test {
+	useJUnitPlatform()
+}
